@@ -1,5 +1,5 @@
-// Comic Tracker PWA Service Worker
-const CACHE_NAME = 'comic-tracker-v4-cache';
+// Comic Tracker PWA Service Worker v6
+const CACHE_NAME = 'comic-tracker-v6b-cache';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

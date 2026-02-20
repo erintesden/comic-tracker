@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comic Reading Tracker</title>
-<link rel="manifest" href="manifest.json">
+<title>Comic Reading Tracker v6</title>
+<meta name="description" content="Track your comic reading progress across series and issues">
 <meta name="theme-color" content="#C4745A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comic Tracker">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
@@ -79,7 +79,8 @@ body {
   white-space: nowrap;
 }
 
-.app-title .icon { font-size: 1.4rem; }
+.app-title .icon { font-size: 1.4rem; display: inline-flex; align-items: center; }
+.app-title .icon svg { width: 1.4em; height: 1.4em; }
 
 .header-actions {
   display: flex;
@@ -302,7 +303,8 @@ body {
   color: var(--text-secondary);
 }
 
-.empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 16px; opacity: 0.5; }
+.empty-state .empty-icon { margin-bottom: 16px; opacity: 0.5; }
+.empty-state .empty-icon svg { width: 3.5rem; height: 3.5rem; }
 
 .empty-state h2 {
   font-family: 'Playfair Display', serif;
@@ -451,9 +453,14 @@ body {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+.next-unread-title .next-vol-prefix {
+  display: block;
+  color: var(--accent-amber);
+  font-size: 0.74rem;
+  font-weight: 600;
 }
 
 .next-unread-mark {
@@ -576,6 +583,29 @@ body {
 .series-card:hover .card-delete { opacity: 1; }
 
 .card-delete:hover { background: #fdf0ed; color: var(--danger); }
+
+.card-edit-fuse {
+  position: absolute;
+  top: 10px;
+  right: 42px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0;
+  z-index: 5;
+}
+
+.series-card:hover .card-edit-fuse { opacity: 1; }
+.card-edit-fuse:hover { background: rgba(212, 160, 83, 0.15); color: var(--accent-amber); }
 
 /* ── REORDER CONTROLS (new in v2) ── */
 .reorder-bar {
@@ -718,12 +748,25 @@ body {
   font-size: 0.84rem;
   color: var(--text-primary);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 
-.issue-text .issue-number { font-weight: 600; }
+.issue-text .issue-number { font-weight: 600; white-space: nowrap; }
+
+.issue-text .issue-title {
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.issue-text .vol-prefix {
+  display: block;
+  color: var(--accent-amber);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ── MODAL ── */
 .modal-overlay {
@@ -1099,10 +1142,176 @@ body {
   .issue-checkbox { width: 28px; height: 28px; }
   .issue-checkbox .checkmark { width: 28px; height: 28px; }
   .card-delete { opacity: 1; }
+  .card-edit-fuse { opacity: 1; }
   .next-unread-mark { padding: 8px 12px; }
   .issue-skip-btn { opacity: 1; }
   .next-unread-skip { padding: 6px 10px; }
+  .fuse-vol-remove { opacity: 1; }
 }
+
+/* ── FUSE SERIES MODAL ── */
+.btn-amber {
+  background: var(--accent-amber);
+  color: #fff;
+  border-color: var(--accent-amber);
+}
+.btn-amber:hover { background: #c49345; border-color: #c49345; }
+
+.fuse-search-wrap { position: relative; margin-bottom: 12px; }
+.fuse-search-input {
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.fuse-search-input:focus {
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 0 3px rgba(212, 160, 83, 0.15);
+}
+.fuse-search-input::placeholder { color: var(--text-muted); }
+
+.fuse-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 300;
+  display: none;
+}
+.fuse-search-dropdown.visible { display: block; }
+
+.fuse-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.84rem;
+}
+.fuse-search-item:last-child { border-bottom: none; }
+.fuse-search-item:hover { background: var(--bg-hover); }
+.fuse-search-item img {
+  width: 30px; height: 42px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+.fuse-search-item .fsi-info { flex: 1; min-width: 0; }
+.fuse-search-item .fsi-title {
+  font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fuse-search-item .fsi-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+.fuse-staged-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0 6px;
+}
+
+.fuse-staged-list {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.fuse-staged-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.84rem;
+}
+.fuse-staged-item:last-child { border-bottom: none; }
+.fuse-staged-item img {
+  width: 28px; height: 40px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+.fuse-staged-item .fst-info { flex: 1; min-width: 0; }
+.fuse-staged-item .fst-name {
+  font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fuse-staged-item .fst-count { font-size: 0.75rem; color: var(--text-muted); }
+.fuse-vol-remove {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border: none; border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.fuse-staged-item:hover .fuse-vol-remove { opacity: 1; }
+.fuse-vol-remove:hover { color: var(--danger); background: #fdf0ed; }
+
+.fuse-empty-msg {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.fuse-progress {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  display: none;
+}
+.fuse-progress.visible { display: flex; align-items: center; gap: 10px; }
+.fuse-progress .spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-amber);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.fuse-name-input {
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+.fuse-name-input:focus { border-color: var(--accent-amber); }
 </style>
 </head>
 <body>
@@ -1111,7 +1320,7 @@ body {
 <header class="app-header">
   <div class="header-inner">
     <h1 class="app-title">
-      <span class="icon">&#128218;</span> Comic Tracker
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 014 4v12a3 3 0 00-3-3H2z"/><path d="M22 4h-6a4 4 0 00-4 4v12a3 3 0 013-3h7z"/><path d="M6 8h1m-1 4h2"/><path d="M17 8h-1m1 4h-2"/><circle cx="7" cy="16" r=".5" fill="currentColor" stroke="none"/><circle cx="17" cy="16" r=".5" fill="currentColor" stroke="none"/><path d="M9.5 6L12 4l2.5 2" stroke-width="1.2"/></svg></span> Comic Tracker
     </h1>
     <div class="header-actions">
       <button class="btn btn-ghost" id="btnSettings" title="Settings">&#9881; Settings</button>
@@ -1138,6 +1347,7 @@ body {
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
     <button class="btn btn-primary" id="btnCreateManual">+ Create Manually</button>
+    <button class="btn btn-amber" id="btnFuseSeries">&#9830; Fuse Series</button>
   </div>
 </section>
 
@@ -1253,10 +1463,45 @@ body {
   </div>
 </div>
 
+<!-- FUSE SERIES MODAL -->
+<div class="modal-overlay" id="fuseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Fuse Series</h2>
+      <button class="modal-close" id="fuseModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:12px;">
+        Search and add multiple Comic Vine volumes. Issues from all volumes will be merged and sorted by publication date to create a unified reading order.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Fused List Name *</label>
+        <input type="text" class="fuse-name-input" id="fuseName" placeholder="e.g. Post-Crisis Superman">
+      </div>
+      <div class="fuse-search-wrap">
+        <input type="text" class="fuse-search-input" id="fuseSearchInput" placeholder="Search Comic Vine to add volumes...">
+        <div class="fuse-search-dropdown" id="fuseSearchDropdown"></div>
+      </div>
+      <div class="fuse-staged-label">Added Volumes (<span id="fuseStagedCount">0</span>)</div>
+      <div class="fuse-staged-list" id="fuseStagedList">
+        <div class="fuse-empty-msg" id="fuseEmptyMsg">No volumes added yet. Search and add at least 2 volumes to fuse.</div>
+      </div>
+      <div class="fuse-progress" id="fuseProgress">
+        <span class="spinner"></span>
+        <span id="fuseProgressText">Fetching issues...</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="fuseCancel">Cancel</button>
+      <button class="btn btn-amber" id="fuseCreate">Fuse &amp; Create List</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════
-   COMIC READING TRACKER v4
-   + Removed "Mark All Read/Unread" buttons
+   COMIC READING TRACKER v6
+   + Fix Up Next widget text truncation
    ════════════════════════════════════════════ */
 
 (function() {
@@ -1289,9 +1534,9 @@ body {
           if (!parsed.settings) parsed.settings = { apiKey: '' };
           // Ensure each list has a sortOrder field (migration from older versions)
           parsed.lists.forEach(function(list) {
-            if (!list.sortOrder) list.sortOrder = 'number-asc';
-            // Migrate title sorts to number-asc
-            if (list.sortOrder === 'title-asc' || list.sortOrder === 'title-desc') list.sortOrder = 'number-asc';
+            if (!list.sortOrder) list.sortOrder = 'date-asc';
+            // Migrate title sorts and old number-asc to date-asc
+            if (list.sortOrder === 'title-asc' || list.sortOrder === 'title-desc' || list.sortOrder === 'number-asc') list.sortOrder = 'date-asc';
             // Ensure each issue has a skipped property
             list.issues.forEach(function(iss) {
               if (typeof iss.skipped === 'undefined') iss.skipped = false;
@@ -1350,26 +1595,40 @@ body {
   // ── SORT ISSUES ──
   function getSortedIssues(list) {
     var issues = list.issues.slice();
-    var order = list.sortOrder || 'number-asc';
+    var order = list.sortOrder || 'date-asc';
+
+    // Chronological sort: fusionOrder first (for fused), then coverDate, then issue number
+    function chronoSort(a, b) {
+      var ao = a.fusionOrder || 0;
+      var bo = b.fusionOrder || 0;
+      if (ao && bo && ao !== bo) return ao - bo;
+      // coverDate sort
+      var da = a.coverDate || '9999-12-31';
+      var db = b.coverDate || '9999-12-31';
+      if (da !== db) return da < db ? -1 : 1;
+      // Fallback: issue number
+      return (parseFloat(a.number) || 0) - (parseFloat(b.number) || 0);
+    }
 
     issues.sort(function(a, b) {
-      var na = parseFloat(a.number) || 0;
-      var nb = parseFloat(b.number) || 0;
       switch (order) {
-        case 'number-desc': return nb - na;
+        case 'date-asc':
+          return chronoSort(a, b);
+        case 'date-desc':
+          return chronoSort(b, a);
         case 'unread-first':
           if (a.read !== b.read) return a.read ? 1 : -1;
-          return na - nb;
+          return chronoSort(a, b);
         case 'read-first':
           if (a.read !== b.read) return a.read ? -1 : 1;
-          return na - nb;
+          return chronoSort(a, b);
         case 'skipped-first':
           var aSkip = a.skipped ? 1 : 0;
           var bSkip = b.skipped ? 1 : 0;
           if (aSkip !== bSkip) return bSkip - aSkip;
-          return na - nb;
-        default: // number-asc
-          return na - nb;
+          return chronoSort(a, b);
+        default:
+          return chronoSort(a, b);
       }
     });
     return issues;
@@ -1377,11 +1636,17 @@ body {
 
   // ── FIND NEXT UNREAD (skips issues marked as skipped) ──
   function getNextUnread(list) {
-    var byNumber = list.issues.slice().sort(function(a, b) {
+    var sorted = list.issues.slice().sort(function(a, b) {
+      var ao = a.fusionOrder || 0;
+      var bo = b.fusionOrder || 0;
+      if (ao && bo && ao !== bo) return ao - bo;
+      var da = a.coverDate || '9999-12-31';
+      var db = b.coverDate || '9999-12-31';
+      if (da !== db) return da < db ? -1 : 1;
       return (parseFloat(a.number) || 0) - (parseFloat(b.number) || 0);
     });
-    for (var i = 0; i < byNumber.length; i++) {
-      if (!byNumber[i].read && !byNumber[i].skipped) return byNumber[i];
+    for (var i = 0; i < sorted.length; i++) {
+      if (!sorted[i].read && !sorted[i].skipped) return sorted[i];
     }
     return null;
   }
@@ -1392,7 +1657,7 @@ body {
     var totalIssues = 0, readIssues = 0;
     state.lists.forEach(function(list) {
       totalIssues += list.issues.length;
-      readIssues += list.issues.filter(function(i) { return i.read; }).length;
+      readIssues += list.issues.filter(function(i) { return i.read || i.skipped; }).length;
     });
     document.getElementById('statSeries').textContent = seriesCount;
     document.getElementById('statRead').textContent = readIssues;
@@ -1407,7 +1672,7 @@ body {
     if (state.lists.length === 0) {
       main.innerHTML =
         '<div class="empty-state">' +
-          '<div class="empty-icon">&#128218;</div>' +
+          '<div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 014 4v12a3 3 0 00-3-3H2z"/><path d="M22 4h-6a4 4 0 00-4 4v12a3 3 0 013-3h7z"/><path d="M6 8h1m-1 4h2"/><path d="M17 8h-1m1 4h-2"/><circle cx="7" cy="16" r=".5" fill="currentColor" stroke="none"/><circle cx="17" cy="16" r=".5" fill="currentColor" stroke="none"/><path d="M9.5 6L12 4l2.5 2" stroke-width="1"/></svg></div>' +
           '<h2>No Reading Lists Yet</h2>' +
           '<p>Search for comic series using the Comic Vine API, or create a list manually to start tracking your reading progress.</p>' +
           '<button class="btn btn-primary" onclick="document.getElementById(\'btnCreateManual\').click()">Get Started</button>' +
@@ -1417,23 +1682,26 @@ body {
 
     var html = '<div class="cards-grid">';
     state.lists.forEach(function(list) {
-      var readCount = list.issues.filter(function(i) { return i.read; }).length;
+      var readCount = list.issues.filter(function(i) { return i.read || i.skipped; }).length;
       var total = list.issues.length;
       var pct = total > 0 ? Math.round((readCount / total) * 100) : 0;
       var expanded = list.expanded ? 'expanded' : '';
-      var sortOrder = list.sortOrder || 'number-asc';
+      var sortOrder = list.sortOrder || 'date-asc';
       var sortedIssues = getSortedIssues(list);
       var nextUnread = getNextUnread(list);
       var allRead = readCount === total && total > 0;
 
       html += '<div class="series-card" data-id="'+list.id+'">';
       html += '<button class="card-delete" data-delete="'+list.id+'" title="Delete list">&times;</button>';
+      if (list.source === 'fusion') {
+        html += '<button class="card-edit-fuse" data-edit-fuse="'+list.id+'" title="Edit fused volumes">&#9998;</button>';
+      }
 
       // Card header
       html += '<div class="card-header" data-toggle="'+list.id+'">';
       html += imgWithFallback(list.image, 56, 80, 'card-cover');
       html += '<div class="card-info">';
-      html += '<div class="card-title" title="'+escapeAttr(list.name)+'">'+escapeHTML(list.name)+'</div>';
+      html += '<div class="card-title" title="'+escapeAttr(list.name)+'">'+escapeHTML(list.name)+(list.source === 'fusion' ? ' <span style="display:inline-block;font-size:0.65rem;font-weight:700;background:var(--accent-amber);color:#fff;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:6px;letter-spacing:0.03em;">FUSED</span>' : '')+'</div>';
       html += '<div class="card-progress-text">'+readCount+'/'+total+' read ('+pct+'%)</div>';
       html += '<div class="card-progress-bar"><div class="card-progress-fill" style="width:'+pct+'%"></div></div>';
       html += '</div></div>';
@@ -1441,11 +1709,12 @@ body {
       // Next unread widget (shown when collapsed)
       if (!list.expanded && nextUnread && !allRead) {
         var nextTitle = nextUnread.title ? ' — ' + escapeHTML(nextUnread.title) : '';
+        var nextVolPrefix = (list.source === 'fusion' && nextUnread.volumeName) ? '<span class="next-vol-prefix">'+escapeHTML(nextUnread.volumeName)+'</span>' : '';
         html += '<div class="next-unread-widget" data-list-id="'+list.id+'" data-issue-id="'+nextUnread.id+'">';
         html += imgWithFallback(nextUnread.image, 40, 56, 'next-unread-thumb');
         html += '<div class="next-unread-info">';
         html += '<div class="next-unread-label">Up Next</div>';
-        html += '<div class="next-unread-title">#'+escapeHTML(String(nextUnread.number))+nextTitle+'</div>';
+        html += '<div class="next-unread-title">'+nextVolPrefix+'#'+escapeHTML(String(nextUnread.number))+nextTitle+'</div>';
         html += '</div>';
         html += '<button class="next-unread-skip" data-quick-skip-list="'+list.id+'" data-quick-skip-issue="'+nextUnread.id+'" title="Skip this issue">';
         html += '<span class="skip-arrow">&#8631;</span> Skip';
@@ -1473,8 +1742,8 @@ body {
       html += '<div class="reorder-bar">';
       html += '<label>Sort:</label>';
       html += '<select data-sort-select="'+list.id+'">';
-      html += '<option value="number-asc"'+(sortOrder==='number-asc'?' selected':'')+'>Issue # (asc)</option>';
-      html += '<option value="number-desc"'+(sortOrder==='number-desc'?' selected':'')+'>Issue # (desc)</option>';
+      html += '<option value="date-asc"'+(sortOrder==='date-asc'?' selected':'')+'>Date (chronological)</option>';
+      html += '<option value="date-desc"'+(sortOrder==='date-desc'?' selected':'')+'>Date (newest first)</option>';
       html += '<option value="unread-first"'+(sortOrder==='unread-first'?' selected':'')+'>Unread first</option>';
       html += '<option value="read-first"'+(sortOrder==='read-first'?' selected':'')+'>Read first</option>';
       html += '<option value="skipped-first"'+(sortOrder==='skipped-first'?' selected':'')+'>Skipped first</option>';
@@ -1487,14 +1756,15 @@ body {
         var readClass = issue.read ? 'read' : '';
         var skippedClass = issue.skipped ? 'skipped' : '';
         var checked = issue.read ? 'checked' : '';
-        var titleText = issue.title ? ' - '+escapeHTML(issue.title) : '';
+        var titleText = issue.title ? '<span class="issue-title"> — '+escapeHTML(issue.title)+'</span>' : '';
         var skippedBadge = issue.skipped ? '<span class="skipped-badge">skipped</span>' : '';
         var skipBtnLabel = issue.skipped ? 'Unskip' : 'Skip';
         var skipBtnClass = issue.skipped ? 'issue-skip-btn is-skipped' : 'issue-skip-btn';
+        var volLine = (list.source === 'fusion' && issue.volumeName) ? '<span class="vol-prefix">'+escapeHTML(issue.volumeName)+'</span>' : '';
         html += '<div class="issue-row '+readClass+' '+skippedClass+'">';
         html += '<label class="issue-checkbox"><input type="checkbox" '+checked+' data-issue="'+issue.id+'" data-list="'+list.id+'"><span class="checkmark"></span></label>';
         html += imgWithFallback(issue.image, 40, 56, 'issue-thumb');
-        html += '<span class="issue-text"><span class="issue-number">#'+escapeHTML(String(issue.number))+'</span>'+skippedBadge+titleText+'</span>';
+        html += '<span class="issue-text">'+volLine+'<span class="issue-number">#'+escapeHTML(String(issue.number))+'</span>'+skippedBadge+titleText+'</span>';
         html += '<button class="'+skipBtnClass+'" data-skip-issue="'+issue.id+'" data-skip-list="'+list.id+'">'+skipBtnLabel+'</button>';
         html += '</div>';
       });
@@ -1511,7 +1781,7 @@ body {
     // Toggle expand/collapse
     document.querySelectorAll('[data-toggle]').forEach(function(el) {
       el.addEventListener('click', function(e) {
-        if (e.target.closest('[data-delete]') || e.target.closest('.issue-checkbox') || e.target.closest('[data-quick-read-list]') || e.target.closest('[data-quick-skip-list]') || e.target.closest('[data-skip-issue]')) return;
+        if (e.target.closest('[data-delete]') || e.target.closest('[data-edit-fuse]') || e.target.closest('.issue-checkbox') || e.target.closest('[data-quick-read-list]') || e.target.closest('[data-quick-skip-list]') || e.target.closest('[data-skip-issue]')) return;
         var listId = this.dataset.toggle;
         var list = state.lists.find(function(l) { return l.id === listId; });
         if (list) {
@@ -1632,6 +1902,15 @@ body {
       });
     });
 
+    // Edit fusion
+    document.querySelectorAll('[data-edit-fuse]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var listId = this.dataset.editFuse;
+        openFuseModalForEdit(listId);
+      });
+    });
+
   }
 
   // ── SEARCH ──
@@ -1744,7 +2023,7 @@ body {
       var totalResults = 1;
 
       while (offset < totalResults) {
-        var url = proxy + encodeURIComponent('https://comicvine.gamespot.com/api/issues/?api_key='+apiKey+'&format=json&filter=volume:'+volumeId+'&sort=issue_number:asc&offset='+offset+'&limit=100');
+        var url = proxy + encodeURIComponent('https://comicvine.gamespot.com/api/issues/?api_key='+apiKey+'&format=json&filter=volume:'+volumeId+'&sort=cover_date:asc&offset='+offset+'&limit=100&field_list=id,issue_number,name,image,cover_date,volume');
         var resp = await fetch(url);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         var data = await resp.json();
@@ -1759,7 +2038,8 @@ body {
               title: iss.name || '',
               image: iss.image ? (iss.image.small_url || iss.image.thumb_url || iss.image.icon_url || null) : null,
               read: false,
-              skipped: false
+              skipped: false,
+              coverDate: iss.cover_date || '9999-12-31'
             });
           });
         }
@@ -1782,7 +2062,7 @@ body {
         issues: allIssues,
         dateAdded: new Date().toISOString(),
         expanded: false,
-        sortOrder: 'number-asc'
+        sortOrder: 'date-asc'
       };
 
       state.lists.unshift(newList);
@@ -1909,8 +2189,7 @@ body {
       issues: manualIssues.map(function(i) { return Object.assign({}, i); }),
       dateAdded: new Date().toISOString(),
       expanded: false,
-      sortOrder: 'number-asc'
-    };
+      sortOrder: 'date-asc'    };
 
     state.lists.unshift(newList);
     saveState();
@@ -2032,8 +2311,8 @@ body {
 
     // Ensure sortOrder and skipped migration
     state.lists.forEach(function(list) {
-      if (!list.sortOrder) list.sortOrder = 'number-asc';
-      if (list.sortOrder === 'title-asc' || list.sortOrder === 'title-desc') list.sortOrder = 'number-asc';
+      if (!list.sortOrder) list.sortOrder = 'date-asc';
+      if (list.sortOrder === 'title-asc' || list.sortOrder === 'title-desc' || list.sortOrder === 'number-asc') list.sortOrder = 'date-asc';
       list.issues.forEach(function(iss) {
         if (typeof iss.skipped === 'undefined') iss.skipped = false;
       });
@@ -2079,7 +2358,375 @@ body {
       settingsModal.classList.remove('visible');
       document.getElementById('importConfirm').classList.remove('visible');
       document.getElementById('deleteConfirm').classList.remove('visible');
+      closeFuseModal();
       hideDropdown();
+    }
+  });
+
+  // ── FUSE SERIES ──
+  var fuseModal = document.getElementById('fuseModal');
+  var fuseStagedVolumes = [];
+  var fuseSearchTimeout = null;
+  var fuseEditListId = null; // null = create mode, string = edit mode
+
+  function openFuseModal() {
+    fuseEditListId = null;
+    fuseStagedVolumes = [];
+    document.getElementById('fuseName').value = '';
+    document.getElementById('fuseSearchInput').value = '';
+    document.getElementById('fuseSearchDropdown').classList.remove('visible');
+    document.getElementById('fuseSearchDropdown').innerHTML = '';
+    document.getElementById('fuseProgress').classList.remove('visible');
+    document.getElementById('fuseCreate').textContent = 'Fuse & Create List';
+    renderFuseStaged();
+    fuseModal.classList.add('visible');
+    setTimeout(function() { document.getElementById('fuseName').focus(); }, 100);
+  }
+
+  function openFuseModalForEdit(listId) {
+    var list = state.lists.find(function(l) { return l.id === listId; });
+    if (!list || list.source !== 'fusion') return;
+
+    fuseEditListId = listId;
+    fuseStagedVolumes = [];
+
+    // Populate staged volumes from stored data
+    if (Array.isArray(list.fusedVolumes)) {
+      list.fusedVolumes.forEach(function(vol) {
+        if (typeof vol === 'string') {
+          // Legacy format: just a name string
+          fuseStagedVolumes.push({ volumeId: '', name: vol, image: '', publisher: '', issueCount: '?' });
+        } else {
+          fuseStagedVolumes.push({
+            volumeId: vol.volumeId || '',
+            name: vol.name || '',
+            image: vol.image || '',
+            publisher: vol.publisher || '',
+            issueCount: vol.issueCount || '?'
+          });
+        }
+      });
+    }
+
+    document.getElementById('fuseName').value = list.name;
+    document.getElementById('fuseSearchInput').value = '';
+    document.getElementById('fuseSearchDropdown').classList.remove('visible');
+    document.getElementById('fuseSearchDropdown').innerHTML = '';
+    document.getElementById('fuseProgress').classList.remove('visible');
+    document.getElementById('fuseCreate').textContent = 'Save Changes';
+    renderFuseStaged();
+    fuseModal.classList.add('visible');
+    setTimeout(function() { document.getElementById('fuseSearchInput').focus(); }, 100);
+  }
+
+  function closeFuseModal() {
+    fuseModal.classList.remove('visible');
+    document.getElementById('fuseSearchDropdown').classList.remove('visible');
+  }
+
+  document.getElementById('btnFuseSeries').addEventListener('click', openFuseModal);
+  document.getElementById('fuseModalClose').addEventListener('click', closeFuseModal);
+  document.getElementById('fuseCancel').addEventListener('click', closeFuseModal);
+  fuseModal.addEventListener('click', function(e) { if (e.target === fuseModal) closeFuseModal(); });
+
+  function renderFuseStaged() {
+    var container = document.getElementById('fuseStagedList');
+    var countEl = document.getElementById('fuseStagedCount');
+    countEl.textContent = fuseStagedVolumes.length;
+
+    if (fuseStagedVolumes.length === 0) {
+      container.innerHTML = '<div class="fuse-empty-msg">No volumes added yet. Search and add at least 2 volumes to fuse.</div>';
+      return;
+    }
+
+    var html = '';
+    fuseStagedVolumes.forEach(function(vol, idx) {
+      html += '<div class="fuse-staged-item">';
+      html += imgWithFallback(vol.image, 28, 40, '');
+      html += '<div class="fst-info">';
+      html += '<div class="fst-name">' + escapeHTML(vol.name) + '</div>';
+      html += '<div class="fst-count">' + escapeHTML(vol.publisher) + ' &middot; ' + vol.issueCount + ' issues</div>';
+      html += '</div>';
+      html += '<button class="fuse-vol-remove" data-fuse-remove="' + idx + '" title="Remove">&times;</button>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-fuse-remove]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        fuseStagedVolumes.splice(parseInt(this.dataset.fuseRemove, 10), 1);
+        renderFuseStaged();
+      });
+    });
+  }
+
+  // Fuse search with debounce
+  var fuseSearchInput = document.getElementById('fuseSearchInput');
+  var fuseSearchDropdown = document.getElementById('fuseSearchDropdown');
+
+  function fuseDebounce(fn, ms) {
+    return function() {
+      var args = arguments, self = this;
+      clearTimeout(fuseSearchTimeout);
+      fuseSearchTimeout = setTimeout(function() { fn.apply(self, args); }, 350);
+    };
+  }
+
+  fuseSearchInput.addEventListener('input', fuseDebounce(function() {
+    var q = fuseSearchInput.value.trim();
+    if (q.length < 2) {
+      fuseSearchDropdown.classList.remove('visible');
+      fuseSearchDropdown.innerHTML = '';
+      return;
+    }
+    if (!state.settings.apiKey) {
+      fuseSearchDropdown.innerHTML = '<div class="search-message">Set your Comic Vine API key in Settings first.</div>';
+      fuseSearchDropdown.classList.add('visible');
+      return;
+    }
+    doFuseSearch(q);
+  }, 350));
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.fuse-search-wrap')) {
+      fuseSearchDropdown.classList.remove('visible');
+    }
+  });
+
+  async function doFuseSearch(query) {
+    fuseSearchDropdown.innerHTML = '<div class="search-loading"><span class="spinner"></span> Searching...</div>';
+    fuseSearchDropdown.classList.add('visible');
+
+    try {
+      var proxy = 'https://corsproxy.io/?';
+      var apiKey = state.settings.apiKey;
+      var url = proxy + encodeURIComponent(
+        'https://comicvine.gamespot.com/api/search/?api_key=' + apiKey +
+        '&format=json&query=' + encodeURIComponent(query) +
+        '&resources=volume&limit=10'
+      );
+
+      var resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var data = await resp.json();
+
+      if (!data.results || data.results.length === 0) {
+        fuseSearchDropdown.innerHTML = '<div class="search-message">No results found.</div>';
+        return;
+      }
+
+      var html = '';
+      data.results.forEach(function(vol) {
+        var imgSrc = vol.image ? (vol.image.icon_url || vol.image.small_url || vol.image.thumb_url || '') : '';
+        var startYear = vol.start_year || '?';
+        var publisher = vol.publisher ? vol.publisher.name : 'Unknown';
+        var count = vol.count_of_issues || '?';
+        // Skip volumes already staged
+        var alreadyAdded = fuseStagedVolumes.some(function(sv) { return sv.volumeId === String(vol.id); });
+        var dimClass = alreadyAdded ? ' style="opacity:0.45;pointer-events:none;"' : '';
+        html += '<div class="fuse-search-item" data-fvol-id="' + vol.id + '" data-fvol-name="' + escapeAttr(vol.name + (vol.start_year ? ' (' + vol.start_year + ')' : '')) + '" data-fvol-image="' + escapeAttr(imgSrc) + '" data-fvol-publisher="' + escapeAttr(publisher) + '" data-fvol-count="' + count + '"' + dimClass + '>';
+        html += imgWithFallback(imgSrc, 30, 42, '');
+        html += '<div class="fsi-info">';
+        html += '<div class="fsi-title">' + escapeHTML(vol.name) + '</div>';
+        html += '<div class="fsi-meta">' + escapeHTML(publisher) + ' &middot; ' + startYear + ' &middot; ' + count + ' issues' + (alreadyAdded ? ' (added)' : '') + '</div>';
+        html += '</div></div>';
+      });
+      fuseSearchDropdown.innerHTML = html;
+
+      fuseSearchDropdown.querySelectorAll('.fuse-search-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var volId = this.dataset.fvolId;
+          if (fuseStagedVolumes.some(function(sv) { return sv.volumeId === volId; })) return;
+          fuseStagedVolumes.push({
+            volumeId: volId,
+            name: this.dataset.fvolName,
+            image: this.dataset.fvolImage,
+            publisher: this.dataset.fvolPublisher,
+            issueCount: this.dataset.fvolCount
+          });
+          fuseSearchDropdown.classList.remove('visible');
+          fuseSearchInput.value = '';
+          renderFuseStaged();
+          showToast('Added "' + this.dataset.fvolName + '" to fusion list');
+        });
+      });
+
+    } catch (err) {
+      console.error('Fuse search error:', err);
+      fuseSearchDropdown.innerHTML = '<div class="search-message">Search failed. Check your API key.</div>';
+    }
+  }
+
+  // Helper: fetch all issues for a single volume
+  async function fetchVolumeIssues(volumeId, volumeName) {
+    var proxy = 'https://corsproxy.io/?';
+    var apiKey = state.settings.apiKey;
+    var issues = [];
+    var offset = 0;
+    var totalResults = 1;
+
+    while (offset < totalResults) {
+      var url = proxy + encodeURIComponent(
+        'https://comicvine.gamespot.com/api/issues/?api_key=' + apiKey +
+        '&format=json&filter=volume:' + volumeId +
+        '&sort=cover_date:asc&offset=' + offset + '&limit=100' +
+        '&field_list=id,issue_number,name,image,cover_date,volume'
+      );
+
+      var resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' fetching ' + volumeName);
+      var data = await resp.json();
+
+      totalResults = data.number_of_total_results || 0;
+
+      if (data.results) {
+        data.results.forEach(function(iss) {
+          issues.push({
+            id: uuid(),
+            number: iss.issue_number || '?',
+            title: iss.name || '',
+            image: iss.image ? (iss.image.small_url || iss.image.thumb_url || iss.image.icon_url || null) : null,
+            read: false,
+            skipped: false,
+            coverDate: iss.cover_date || '9999-12-31',
+            volumeName: volumeName,
+            volumeId: volumeId
+          });
+        });
+      }
+
+      offset += 100;
+      if (!data.results || data.results.length === 0) break;
+    }
+    return issues;
+  }
+
+  // Helper: sort issues chronologically and assign fusionOrder
+  function sortAndAssignFusionOrder(allIssues) {
+    allIssues.sort(function(a, b) {
+      if (a.coverDate < b.coverDate) return -1;
+      if (a.coverDate > b.coverDate) return 1;
+      var na = a.volumeName.toLowerCase(), nb = b.volumeName.toLowerCase();
+      if (na < nb) return -1;
+      if (na > nb) return 1;
+      return (parseFloat(a.number) || 0) - (parseFloat(b.number) || 0);
+    });
+    allIssues.forEach(function(iss, idx) {
+      iss.fusionOrder = idx + 1;
+    });
+    return allIssues;
+  }
+
+  // Fuse & Create / Edit
+  document.getElementById('fuseCreate').addEventListener('click', async function() {
+    var fuseName = document.getElementById('fuseName').value.trim();
+    if (!fuseName) {
+      showToast('Please enter a name for the fused list.');
+      document.getElementById('fuseName').focus();
+      return;
+    }
+    if (fuseStagedVolumes.length < 2) {
+      showToast('Add at least 2 volumes to fuse.');
+      return;
+    }
+    if (!state.settings.apiKey) {
+      showToast('Set your Comic Vine API key in Settings first.');
+      return;
+    }
+
+    var isEdit = !!fuseEditListId;
+    var existingList = null;
+    if (isEdit) {
+      existingList = state.lists.find(function(l) { return l.id === fuseEditListId; });
+      if (!existingList) {
+        showToast('Could not find list to edit.');
+        return;
+      }
+    }
+
+    var progressEl = document.getElementById('fuseProgress');
+    var progressText = document.getElementById('fuseProgressText');
+    progressEl.classList.add('visible');
+
+    try {
+      var allIssues = [];
+
+      // Determine which volumes are new vs existing (in edit mode)
+      var existingVolumeIds = {};
+      if (isEdit && existingList) {
+        // Build a map of volumeId -> issues from existing list (preserves read/skipped state)
+        existingList.issues.forEach(function(iss) {
+          var vid = iss.volumeId || '';
+          if (!existingVolumeIds[vid]) existingVolumeIds[vid] = [];
+          existingVolumeIds[vid].push(iss);
+        });
+      }
+
+      for (var vi = 0; vi < fuseStagedVolumes.length; vi++) {
+        var vol = fuseStagedVolumes[vi];
+        var volId = vol.volumeId;
+
+        if (isEdit && existingVolumeIds[volId]) {
+          // Reuse existing issues — preserves read/skipped state
+          progressText.textContent = 'Keeping "' + vol.name + '" (' + (vi + 1) + '/' + fuseStagedVolumes.length + ')...';
+          allIssues = allIssues.concat(existingVolumeIds[volId]);
+        } else {
+          // New volume — fetch from API
+          progressText.textContent = 'Fetching "' + vol.name + '" (' + (vi + 1) + '/' + fuseStagedVolumes.length + ')...';
+          var fetched = await fetchVolumeIssues(volId, vol.name);
+          allIssues = allIssues.concat(fetched);
+        }
+      }
+
+      if (allIssues.length === 0) {
+        progressEl.classList.remove('visible');
+        showToast('No issues found across the selected volumes.');
+        return;
+      }
+
+      progressText.textContent = 'Sorting ' + allIssues.length + ' issues by publication date...';
+      sortAndAssignFusionOrder(allIssues);
+
+      var volumeMetadata = fuseStagedVolumes.map(function(v) {
+        return { volumeId: v.volumeId, name: v.name, image: v.image, publisher: v.publisher, issueCount: v.issueCount };
+      });
+
+      if (isEdit && existingList) {
+        // Update existing list in place
+        existingList.name = fuseName;
+        existingList.image = fuseStagedVolumes[0].image || existingList.image;
+        existingList.fusedVolumes = volumeMetadata;
+        existingList.issues = allIssues;
+        saveState();
+        progressEl.classList.remove('visible');
+        closeFuseModal();
+        render();
+        showToast('Updated "' + fuseName + '" — ' + allIssues.length + ' issues from ' + fuseStagedVolumes.length + ' volumes');
+      } else {
+        // Create new list
+        var newList = {
+          id: uuid(),
+          name: fuseName,
+          image: fuseStagedVolumes[0].image || null,
+          source: 'fusion',
+          fusedVolumes: volumeMetadata,
+          issues: allIssues,
+          dateAdded: new Date().toISOString(),
+          expanded: false,
+          sortOrder: 'date-asc'
+        };
+        state.lists.unshift(newList);
+        saveState();
+        progressEl.classList.remove('visible');
+        closeFuseModal();
+        render();
+        showToast('Created "' + fuseName + '" with ' + allIssues.length + ' issues from ' + fuseStagedVolumes.length + ' volumes');
+      }
+
+    } catch (err) {
+      console.error('Fuse error:', err);
+      progressEl.classList.remove('visible');
+      showToast('Failed to fetch issues: ' + err.message);
     }
   });
 
@@ -2089,13 +2736,12 @@ body {
 })();
 </script>
 <script>
-// Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('./sw.js').then(function(reg) {
-      console.log('Service Worker registered, scope:', reg.scope);
+      console.log('SW registered:', reg.scope);
     }).catch(function(err) {
-      console.log('Service Worker registration failed:', err);
+      console.log('SW registration failed:', err);
     });
   });
 }
